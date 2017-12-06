@@ -1,0 +1,26 @@
+#!/usr/bin/python
+
+import sys
+from subprocess import Popen, PIPE
+from re import split
+
+volist = {}
+
+sub_proc = Popen(['ps', 'aux'], shell=False, stdout=PIPE)
+sub_proc.stdout.readline()
+for line in sub_proc.stdout:
+    if 'fts_url_copy' in line:
+        line = line[:-1]
+        proc_info = split(" *", line)
+        if 'gmetric' not in line:
+            vo = proc_info[proc_info.index('--vo')+1]
+            if vo in volist:
+                volist[vo] += 1
+            else:
+                volist[vo] = 1
+
+data = ''
+for vo in volist:
+    data += 'active_transfers,vo='+vo+' value='+str(volist[vo])+'\n'
+
+print data
