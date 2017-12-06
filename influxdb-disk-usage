@@ -1,0 +1,3 @@
+#!/bin/bash
+export usage=`du -s /var/lib/influxdb/data | awk '{print $1}'`
+echo "datadir value=$usage"
