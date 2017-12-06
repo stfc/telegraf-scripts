@@ -1,0 +1,12 @@
+#!/bin/sh
+# this script finds & enters the network namespace of the xrootd container & gathers
+# details on tcp connections
+
+myfile="/tmp/connectionLog.txt"
+NSPATH=`docker inspect --format '{{ .NetworkSettings.SandboxKey }}' xrootd`
+nsenter --net=$NSPATH netstat -tap > $myfile
+
+CONNS_GATEWAY=`grep xrootd $myfile | grep -v LISTEN | grep ceph | wc -l`
+CONNS_PROXY=`grep xrootd $myfile | grep -v LISTEN | grep -v ceph | wc -l`
+
+echo xrootd_connections gateway=$CONNS_GATEWAY,proxy=$CONNS_PROXY
