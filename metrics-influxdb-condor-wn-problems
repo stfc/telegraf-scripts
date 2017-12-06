@@ -1,0 +1,56 @@
+#!/usr/bin/python
+import classad
+import htcondor
+
+coll = htcondor.Collector()
+results = coll.query(htcondor.AdTypes.Startd, 'PartitionableSlot == TRUE && NODE_STATUS =!= DEFINED && NODE_STATUS =!= "All_OK"', ["NODE_STATUS"])
+
+countCvmfsALICE = 0
+countCvmfsATLAS = 0
+countCvmfsLHCb = 0
+countCvmfsCMS = 0
+countCvmfsGRID = 0
+countContainerd = 0
+countContainers = 0
+countDocker = 0
+countSwap = 0
+countScratch = 0
+countClock = 0
+
+for result in results:
+   if 'alice' in result["NODE_STATUS"]:
+      countCvmfsALICE += 1
+   if 'atlas' in result["NODE_STATUS"]:
+      countCvmfsATLAS += 1
+   if 'cms' in result["NODE_STATUS"]:
+      countCvmfsCMS += 1
+   if 'lhcb' in result["NODE_STATUS"]:
+      countCvmfsLHCb += 1
+   if 'grid' in result["NODE_STATUS"]:
+      countCvmfsGRID += 1
+   if 'containerd' in result["NODE_STATUS"]:
+      countContainerd += 1
+   if 'Docker' in result["NODE_STATUS"]:
+      countDocker += 1
+   if 'Swap' in result["NODE_STATUS"]:
+      countSwap += 1
+   if 'scratch' in result["NODE_STATUS"] or 'pool' in result["NODE_STATUS"]:
+      countScratch += 1
+   if 'clock' in result["NODE_STATUS"]:
+      countClock += 1
+   if 'Cannot create containers' in result["NODE_STATUS"]:
+      countContainers += 1    
+
+data = 'wn-problems,type=cvmfs-alice value='+str(countCvmfsALICE)+'\n'
+data = data + 'wn-problems,type=cvmfs-atlas value='+str(countCvmfsATLAS)+'\n'
+data = data + 'wn-problems,type=cvmfs-cms value='+str(countCvmfsCMS)+'\n'
+data = data + 'wn-problems,type=cvmfs-lhcb value='+str(countCvmfsLHCb)+'\n'
+data = data + 'wn-problems,type=cvmfs-grid value='+str(countCvmfsGRID)+'\n'
+data = data + 'wn-problems,type=containerd value='+str(countContainerd)+'\n'
+data = data + 'wn-problems,type=docker value='+str(countDocker)+'\n'
+data = data + 'wn-problems,type=swap value='+str(countSwap)+'\n'
+data = data + 'wn-problems,type=scratch value='+str(countScratch)+'\n'
+data = data + 'wn-problems,type=clock value='+str(countClock)+'\n'
+data = data + 'wn-problems,type=containers value='+str(countContainers)+'\n'
+
+print data

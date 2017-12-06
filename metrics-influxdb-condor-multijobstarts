@@ -1,0 +1,24 @@
+#!/usr/bin/python
+import classad
+import htcondor
+
+data = ''
+
+coll = htcondor.Collector()
+results = coll.query(htcondor.AdTypes.Schedd, "true", ["Name"])
+for result in results:
+   host = result["Name"]
+   scheddAd = coll.locate(htcondor.DaemonTypes.Schedd, host)
+   schedd = htcondor.Schedd(scheddAd)
+   try:
+      ajobs = schedd.query('NumJobStarts > 1',["JobStatus"])
+   except:
+      print '# Unable to query schedd:',host,'but continuing anyway'
+
+   num = 0
+   for ajob in ajobs:
+      num += 1
+
+   data += 'multijobstarts,schedd='+host.split('.')[0]+' value='+str(num)+'\n'
+
+print data
