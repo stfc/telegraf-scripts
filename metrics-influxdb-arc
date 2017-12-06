@@ -1,0 +1,96 @@
+#!/usr/bin/python
+
+import os
+import time
+
+# ARC job states
+arex_job_states = [
+    "ACCEPTED",
+    "PREPARING",
+    "SUBMIT",
+    "INLRMS",
+    "FINISHING",
+    "FINISHED",
+    "DELETED",
+    "CANCELLING"
+]
+
+# Get numbers of jobs in each state
+def getJobsStatesInfo():
+   control_subdirs = ['accepting', 'finished', 'processing', 'restarting']
+
+   data = ''
+   states = {}
+
+   for control_subdir in control_subdirs:
+      subdir = os.path.join('/var/spool/arc/jobstatus', control_subdir)
+
+      if not os.path.isdir(subdir):
+         return
+
+      try:
+         for status_file in os.listdir(subdir):
+            try:
+               f = open(os.path.join(subdir, status_file))
+            except IOError, e:
+               print 'Could not open status file %s: %s' % status_file, str(e)
+               continue
+
+            status = f.readline().strip()
+            if status in states:
+               states[status] += 1
+            else:
+               states[status] = 1
+            f.close()
+      except OSError, e:
+         print 'Could not list status files in %s: %s' % subdir, str(e)
+
+   for state in arex_job_states:
+      if state in states:
+         value = states[state]
+      else:
+         value = 0
+      data += 'jobs,state=' + state + ' value=' + str(value) + '\n'
+
+   return data
+
+# Get number of jobs in the processing subdirectory
+def getProcessingJobs():
+   processing = 0
+
+   processing_dir = '/var/spool/arc/jobstatus/processing'
+
+   try:
+      entries = os.listdir(processing_dir)
+   except OSError, e:
+      print "Error listing dir %s: %s" % processing_dir, str(e)
+      return
+   processing += len(entries)
+
+   data = 'jobs,state=PROCESSING value=' + str(processing) + '\n'
+   return data
+
+# Get the time since the modification timestamp of the gm-heartbeat file
+def getHeartBeatInfo():
+
+   heartbeat = '/var/spool/arc/jobstatus/gm-heartbeat'
+   try:
+      statinfo = os.stat(heartbeat)
+   except OSError, e:
+      print "Error with heartbeat file: %s" %str(e)
+      return
+
+   mtime = statinfo.st_mtime
+   now = time.time()
+   heartbeat_time = now - mtime
+
+   data = 'arex_heartbeat_lastseen value=' + str(heartbeat_time) + '\n'
+   return data
+
+# Generate metrics
+data = ''
+data += getJobsStatesInfo()
+data += getProcessingJobs()
+data += getHeartBeatInfo()
+
+print data
