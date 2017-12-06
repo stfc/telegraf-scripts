@@ -1,0 +1,65 @@
+#!/usr/bin/python
+import datetime
+from datetime import datetime, timedelta
+import socket
+import subprocess, re
+import sys
+
+data = ''
+
+# Squid stats
+squidStatsCmd = ['/usr/bin/squidclient', '-h', 'localhost', '-p', '3128']
+
+mgrSections = ["5min", "info", "storedir"]
+
+regexps = [
+    ("5min",     re.compile("^(?P<stat_name>(?!syscalls|dns|icp|server.other|server.ftp|server.http)[a-zA-Z_.]+(?<!median_svc_time)) = (?P<stat_value>[0-9.]*)(?P<stat_is_rate>[ /])(?P<stat_units>[a-z]*)$")),
+    ("info_5",   re.compile("^\s*(?P<stat_name>[a-zA-Z %]*):\s*5min: (?P<stat_value>[0-9.]*)(?P<stat_units>%), 60min: ([0-9.]*)%$")),
+    ("info_60",  re.compile("^\s*(?P<stat_name>[a-zA-Z %]*):\s*5min: ([0-9.]*)(?P<stat_units>%), 60min: (?P<stat_value>[0-9.]*)%$")),
+    ("storedir", re.compile("^(?P<stat_name>Percent Used): (?P<stat_value>\d.\d*)(?P<stat_units>%)$")),
+    ("storedir", re.compile("^(?P<stat_name>Filesystem Space in use): \d*/\d* [A-Z]{2} \((?P<stat_value>\d.\d*)(?P<stat_units>%)\)$")),
+    ("info", re.compile("^\s*(?P<stat_name>Number of file desc currently in use):\s*(?P<stat_value>\d*)$")),
+]
+
+# Gather raw data from sections
+results = ""
+
+for section in mgrSections:
+    subproc = subprocess.Popen(squidStatsCmd + ["mgr:" + section], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    output, errors = subproc.communicate()
+    retcode = subproc.returncode
+
+    if retcode == 0:
+        results += output
+
+# Process raw data
+if results <> "":
+    stats = results.split("\n")
+
+    for s in stats:
+        for n, r in regexps:
+            m = r.match(s)
+
+            if m != None:
+                m = m.groupdict()
+
+                # Fix units for rate based stats
+                if "stat_is_rate" in m and m["stat_is_rate"] == "/":
+                    m["stat_units"] = "per " + m["stat_units"]
+
+                # Storedir stats are not too well named
+                if n == "storedir":
+                    m["stat_name"] = "store_directory_" + m["stat_name"]
+                elif n == "info_60":
+                    m["stat_name"] = m["stat_name"] + "_60min"
+
+                # Prefix all stat names
+                m["stat_name"] = m["stat_name"].replace(".", "_").replace(" ","_").lower()
+
+                # Name corrections
+                m["stat_name"] = m["stat_name"].replace("%", "percent")
+
+                # Generate line for InfluxDB
+                data += m["stat_name"] + ' value=' + m["stat_value"] + '\n'
+
+print data
