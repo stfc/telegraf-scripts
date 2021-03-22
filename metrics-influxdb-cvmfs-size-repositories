@@ -1,0 +1,51 @@
+#!/usr/bin/python
+
+import os
+import subprocess
+
+
+def list_repositories():
+     """
+     get the list of repositories.
+     We can do it by listing /cvmfs-mirror/, and selecting only directories
+     """
+     repositories = []
+     candidates = os.listdir('/cvmfs-mirror/')
+     for candidate in candidates:
+         full_path = os.path.join('/cvmfs-mirror', candidate)
+         if os.path.isdir(full_path):
+             repositories.append(candidate)
+     return repositories
+
+def get_size(repository):
+     """
+     size, in MB, of each directory
+     """
+     full_path = os.path.join('/cvmfs-mirror', repository)
+     cmd = "du -sm %s | awk '{print $1}'" %full_path
+     subproc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+     (out, err) = subproc.communicate()
+     out = out.strip()
+     return out
+
+
+def get_number_files(repository):
+     """
+     number of files in each directory
+     """
+     full_path = os.path.join('/cvmfs-mirror', repository)
+     cmd = "find %s -type f | wc -l" %full_path
+     subproc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+     (out, err) = subproc.communicate()
+     out = out.strip()
+     return out
+
+
+template_size = "size,repository={repository} value={size}"
+template_n_files = "n_files,repository={repository} value={n_files}"
+repositories = list_repositories()
+for repository in repositories:
+    size = get_size(repository)
+    n_files = get_number_files(repository)
+    print(template_size.format(repository = repository, size = size))
+    print(template_n_files.format(repository = repository, n_files = n_files))
