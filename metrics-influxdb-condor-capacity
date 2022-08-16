@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import htcondor
 import classad
 
@@ -30,4 +30,4 @@ for startd in startds:
    data = data + 'capacity,type=used,resource=cpu,host='+startd["Machine"]+',tranche='+startd["RalCluster"]+' value='+str(capacityUsed)+'\n'
    data = data + 'capacity,type=used,resource=memory,host='+startd["Machine"]+',tranche='+startd["RalCluster"]+' value='+str(memoryUsed)+'\n'
 
-print data
+print (data)

@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python3
 import classad
 import htcondor
 
@@ -109,7 +108,7 @@ for result in results:
             numStartdsGoodMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
          if not numCpusUseableMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
             numCpusUseableMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
-         
+
          cpuFreeMesosI[result["CONTAINER_IMAGE_NAME"]] += result["Cpus"]
          cpuUsedMesosI[result["CONTAINER_IMAGE_NAME"]] += result["TotalCpus"] - result["Cpus"]
          memFreeMesosI[result["CONTAINER_IMAGE_NAME"]] += result["Memory"]
@@ -181,4 +180,4 @@ data += 'cpus numUsed=' + str(int(cpuUsed)) + ',' + \
         'percentUseable=' + str(cpuUseablePercent) + ',' + \
         'percentUsedOfUseable=' + str(cpuUsedPercentGood) + '\n'
 
-print data
+print (data)

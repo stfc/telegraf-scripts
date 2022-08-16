@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import classad
 import htcondor
 
@@ -11,10 +11,10 @@ for result in results:
    try:
       ajobs = schedd.query('JobStatus == 2 && CurrentTime - EnteredCurrentStatus > 345600', ["JobStatus"])
    except:
-      print '# Unable to query schedd:',host,'but continuing anyway'
+      print ('# Unable to query schedd:',host,'but continuing anyway')
 
    num = 0
    for ajob in ajobs:
       num += 1
 
-   print 'JobsTooLong,schedd=%s value=%d' % (host, num)
+   print ('JobsTooLong,schedd=%s value=%d' % (host, num))

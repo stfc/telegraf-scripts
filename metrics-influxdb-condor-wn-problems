@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import classad
 import htcondor
 
@@ -39,7 +39,7 @@ for result in results:
    if 'clock' in result["NODE_STATUS"]:
       countClock += 1
    if 'Cannot create containers' in result["NODE_STATUS"]:
-      countContainers += 1    
+      countContainers += 1
 
 data = 'wn-problems,type=cvmfs-alice value='+str(countCvmfsALICE)+'\n'
 data = data + 'wn-problems,type=cvmfs-atlas value='+str(countCvmfsATLAS)+'\n'
@@ -53,4 +53,4 @@ data = data + 'wn-problems,type=scratch value='+str(countScratch)+'\n'
 data = data + 'wn-problems,type=clock value='+str(countClock)+'\n'
 data = data + 'wn-problems,type=containers value='+str(countContainers)+'\n'
 
-print data
+print (data)

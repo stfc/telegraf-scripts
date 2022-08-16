@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import classad
 import htcondor
 import time
@@ -24,16 +24,16 @@ for result in results:
    try:
       ajobs = schedd.query('',["x509UserProxyVOName", "RequestCpus", "RequestMemory", "JobStatus", "JobCurrentStartDate", "RemoteSysCpu", "RemoteUserCpu", "isPreemptable", "DockerImage", "RemoteHost", "x509UserProxyFirstFQAN", "ResidentSetSize_RAW"])
    except:
-      print '# Unable to query schedd:',host,'so will try once more'
+      print ('# Unable to query schedd:',host,'so will try once more')
       if host not in ignoreSchedFailures:
          time.sleep(5)
          try:
             ajobs = schedd.query('',["x509UserProxyVOName", "RequestCpus", "RequestMemory", "JobStatus", "JobCurrentStartDate", "RemoteSysCpu", "RemoteUserCpu", "isPreemptable", "DockerImage", "RemoteHost", "x509UserProxyFirstFQAN", "ResidentSetSize_RAW"])
          except:
-            print '# Unable to query schedd:',host,'again'
+            print ('# Unable to query schedd:',host,'again')
             exit(1)
       else:
-         print '# - ignoring failure'
+         print ('# - ignoring failure')
          continue
 
    vos = []
@@ -78,7 +78,7 @@ for result in results:
 
       if ajob["RequestCpus"] not in cpus:
          cpus.append(ajob["RequestCpus"])
-    
+
       if ajob["JobStatus"] == 2:
          if "ResidentSetSize_RAW" in ajob:
             ResidentSetSize_RAW += ajob["ResidentSetSize_RAW"]
@@ -209,4 +209,4 @@ for key in imagesR:
 
 data += 'TotalResidentSetSize value='+str(ResidentSetSize_RAW)+'\n'
 
-print data
+print (data)

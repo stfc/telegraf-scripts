@@ -1,12 +1,12 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import sys
 import subprocess
 
 p = subprocess.Popen(["condor_config_val", "-negotiator", "GROUP_NAMES"], stdout=subprocess.PIPE)
 output, err = p.communicate()
 
-output = output.replace(" ", "")
-groups = output.split(',')
+output = output.replace(b" ", b"")
+groups = output.split(b',')
 
 p = subprocess.Popen(["condor_userprio", "-grouprollup", "-allusers"], stdout=subprocess.PIPE)
 output, err = p.communicate()
@@ -17,26 +17,26 @@ quotas = {}
 usage = {}
 
 for line in lines:
-   if 'ByQuota' in line:
+   if b'ByQuota' in line:
       pieces = line.split()
       group = pieces[0]
       quota = pieces[1]
       inuse = pieces[3]
       quotas[group] = quota
       usage[group] = inuse
-   if 'Number of users' in line:
+   if b'Number of users' in line:
       pieces = line.split()
       total = pieces[5]
 
 data = ''
 for group in groups:
    if group in quotas and group in usage:
-      pieces = group.split('.')
+      pieces = group.split(b'.')
       percent = 1.0
       name = ''
       for piece in pieces:
          if len(name) > 0:
-            name = name + '.' + piece
+            name = name + b'.' + piece
          else:
             name = piece
          percent = percent*float(quotas[name])
@@ -44,6 +44,6 @@ for group in groups:
          fairness = 0
          if cpus > 0:
             fairness = 100.0*float(usage[group])/cpus
-      data += "groups,name=%s allocation=%d,usage=%d,fairness=%d\n" % (group, cpus, int(usage[group]), fairness)
+      data += "groups,name=%s allocation=%d,usage=%d,fairness=%d\n" % (group.decode(), cpus, int(float(usage[group])), fairness)
 
-print data
+print (data)

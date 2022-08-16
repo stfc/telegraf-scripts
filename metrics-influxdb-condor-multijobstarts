@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import classad
 import htcondor
 
@@ -13,7 +13,7 @@ for result in results:
    try:
       ajobs = schedd.query('NumJobStarts > 1',["JobStatus"])
    except:
-      print '# Unable to query schedd:',host,'but continuing anyway'
+      print ('# Unable to query schedd:',host,'but continuing anyway')
 
    num = 0
    for ajob in ajobs:
@@ -21,4 +21,4 @@ for result in results:
 
    data += 'multijobstarts,schedd='+host.split('.')[0]+' value='+str(num)+'\n'
 
-print data
+print (data)

@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/env python3
 import classad
 import htcondor
 
@@ -44,5 +43,4 @@ for result in results:
          coresOther += result["Cpus"]
 
 data = 'CoresNotUsed draining=%d,preemptable=%d,unhealthy=%d,disabled=%d,memory=%d,other=%d' % (coresDraining, coresPreemptable, coresUnhealthy, coresStartJobs, coresMemory, coresOther)
-print data
-
+print (data)
