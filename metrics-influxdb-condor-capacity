@@ -1,33 +1,32 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import htcondor
-import classad
 
 coll = htcondor.Collector()
 startds = coll.query(htcondor.AdTypes.Startd, "PartitionableSlot =?=True", ["Machine","TotalMemory","Memory","TotalCpus","Cpus","RalScaling","ScalingFactor","RalCluster","StartJobs"])
 
 data = ''
 for startd in startds:
-   # Determine the scaling factor
-   scalingFactor = 0
-   if "RalScaling" in startd:
-      scalingFactor = startd["RalScaling"]
-   elif "ScalingFactor" in startd:
-      scalingFactor = startd["ScalingFactor"]
+    # Determine the scaling factor
+    scalingFactor = 0
+    if "RalScaling" in startd:
+        scalingFactor = startd["RalScaling"]
+    elif "ScalingFactor" in startd:
+        scalingFactor = startd["ScalingFactor"]
 
-   capacityTotal = int(4.0*scalingFactor*startd["TotalCpus"])
-   capacityIdle = int(4.0*scalingFactor*startd["Cpus"])
-   capacityUsed = capacityTotal - capacityIdle
+    capacityTotal = int(4.0*scalingFactor*startd["TotalCpus"])
+    capacityIdle = int(4.0*scalingFactor*startd["Cpus"])
+    capacityUsed = capacityTotal - capacityIdle
 
-   memoryTotal = startd["TotalMemory"]
-   memoryIdle = startd["Memory"]
-   memoryUsed = memoryTotal - memoryIdle
+    memoryTotal = startd["TotalMemory"]
+    memoryIdle = startd["Memory"]
+    memoryUsed = memoryTotal - memoryIdle
 
-   if "StartJobs" in startd:
-      if startd["StartJobs"]:
-         data = data + 'capacity,type=idle,resource=cpu,host='+startd["Machine"]+',tranche='+startd["RalCluster"]+' value='+str(capacityIdle)+'\n'
-         data = data + 'capacity,type=idle,resource=memory,host='+startd["Machine"]+',tranche='+startd["RalCluster"]+' value='+str(memoryIdle)+'\n'
+    if "StartJobs" in startd:
+        if startd["StartJobs"]:
+            data = data + 'capacity,type=idle,resource=cpu,host='+startd["Machine"]+',tranche='+startd["RalCluster"]+' value='+str(capacityIdle)+'\n'
+            data = data + 'capacity,type=idle,resource=memory,host='+startd["Machine"]+',tranche='+startd["RalCluster"]+' value='+str(memoryIdle)+'\n'
 
-   data = data + 'capacity,type=used,resource=cpu,host='+startd["Machine"]+',tranche='+startd["RalCluster"]+' value='+str(capacityUsed)+'\n'
-   data = data + 'capacity,type=used,resource=memory,host='+startd["Machine"]+',tranche='+startd["RalCluster"]+' value='+str(memoryUsed)+'\n'
+    data = data + 'capacity,type=used,resource=cpu,host='+startd["Machine"]+',tranche='+startd["RalCluster"]+' value='+str(capacityUsed)+'\n'
+    data = data + 'capacity,type=used,resource=memory,host='+startd["Machine"]+',tranche='+startd["RalCluster"]+' value='+str(memoryUsed)+'\n'
 
-print data
+print (data)

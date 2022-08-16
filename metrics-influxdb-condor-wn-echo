@@ -1,5 +1,4 @@
-#!/usr/bin/python
-import classad
+#!/usr/bin/env python3
 import htcondor
 
 coll = htcondor.Collector()
@@ -30,5 +29,5 @@ for result in results:
         elif result['ECHO_XROOTD_PROXY_STATUS'] == 'None':
             echoXrootdProxyNone += 1
 
-print 'wn_gateways,type=xrootd_gateway healthy=%d,unhealthy=%d,notapplicable=%d' % (echoXrootdGatewayGood, echoXrootdGatewayBad, echoXrootdGatewayNone)
-print 'wn_gateways,type=xrootd_proxy healthy=%d,unhealthy=%d,notapplicable=%d' % (echoXrootdProxyGood, echoXrootdProxyBad, echoXrootdProxyNone)
+print ('wn_gateways,type=xrootd_gateway healthy=%d,unhealthy=%d,notapplicable=%d' % (echoXrootdGatewayGood, echoXrootdGatewayBad, echoXrootdGatewayNone))
+print ('wn_gateways,type=xrootd_proxy healthy=%d,unhealthy=%d,notapplicable=%d' % (echoXrootdProxyGood, echoXrootdProxyBad, echoXrootdProxyNone))

@@ -1,11 +1,10 @@
-#!/usr/bin/python
-import classad
-import htcondor
+#!/usr/bin/env python3
 import time
 import re
+import htcondor
 
 # Ignoreable schedds - any failures when quering these schedds will be ignored
-ignoreSchedFailures = ['arc-ce05.gridpp.rl.ac.uk', 'lcgvm21.gridpp.rl.ac.uk', 'arc-ce-test01.gridpp.rl.ac.uk']
+ignoreSchedFailures = ['arc-ce-test01.gridpp.rl.ac.uk', 'arc-ce-test02.gridpp.rl.ac.uk']
 
 vosa = []
 jobsW = {}
@@ -18,195 +17,203 @@ data = ''
 coll = htcondor.Collector()
 results = coll.query(htcondor.AdTypes.Schedd, "true", ["Name"])
 for result in results:
-   host = result["Name"]
-   scheddAd = coll.locate(htcondor.DaemonTypes.Schedd, host)
-   schedd = htcondor.Schedd(scheddAd)
-   try:
-      ajobs = schedd.query('',["x509UserProxyVOName", "RequestCpus", "RequestMemory", "JobStatus", "JobCurrentStartDate", "RemoteSysCpu", "RemoteUserCpu", "isPreemptable", "DockerImage", "RemoteHost", "x509UserProxyFirstFQAN", "ResidentSetSize_RAW"])
-   except:
-      print '# Unable to query schedd:',host,'so will try once more'
-      if host not in ignoreSchedFailures:
-         time.sleep(5)
-         try:
-            ajobs = schedd.query('',["x509UserProxyVOName", "RequestCpus", "RequestMemory", "JobStatus", "JobCurrentStartDate", "RemoteSysCpu", "RemoteUserCpu", "isPreemptable", "DockerImage", "RemoteHost", "x509UserProxyFirstFQAN", "ResidentSetSize_RAW"])
-         except:
-            print '# Unable to query schedd:',host,'again'
-            exit(1)
-      else:
-         print '# - ignoring failure'
-         continue
+    host = result["Name"]
+    scheddAd = coll.locate(htcondor.DaemonTypes.Schedd, host)
+    schedd = htcondor.Schedd(scheddAd)
+    try:
+        ajobs = schedd.query('',["x509UserProxyVOName", "RequestCpus", "RequestMemory", "JobStatus", "JobCurrentStartDate", "RemoteSysCpu", "RemoteUserCpu", "isPreemptable", "DockerImage", "RemoteHost", "x509UserProxyFirstFQAN", "ResidentSetSize_RAW"])
+    except:
+        print ('# Unable to query schedd:',host,'so will try once more')
+        if host not in ignoreSchedFailures:
+            time.sleep(5)
+            try:
+                ajobs = schedd.query('',["x509UserProxyVOName", "RequestCpus", "RequestMemory", "JobStatus", "JobCurrentStartDate", "RemoteSysCpu", "RemoteUserCpu", "isPreemptable", "DockerImage", "RemoteHost", "x509UserProxyFirstFQAN", "ResidentSetSize_RAW"])
+            except:
+                print ('# Unable to query schedd:',host,'again')
+                exit(1)
+        else:
+            print ('# - ignoring failure')
+            continue
 
-   vos = []
-   roles = []
-   cpus = []
+    vos = []
+    roles = []
+    cpus = []
 
-   jobsR = {}
-   jobsRd = {}
-   jobsRc = {}
-   jobsI = {}
-   jobsH = {}
+    # Initialize dictionary for running jobs
+    jobsR = {}
+    # Initialize dictionary for running jobs in Docker environment
+    jobsRd = {}
+    # Initialize dictionary for running jobs in Cloud environment
+    jobsRc = {}
+    # Initialize dictionary for idle jobs
+    jobsI = {}
+    # Initialize dictionary for on hold jobs
+    jobsH = {}
 
-   jobsRp = {}
-   jobsIp = {}
-   jobsHp = {}
+    # Initialize dictionary for running jobs and preemptable is true
+    jobsRp = {}
+    # Initialize dictionary for idle jobs and preemptable is true
+    jobsIp = {}
+    # Initialize dictionary for on hold jobs and preemptable is true
+    jobsHp = {}
 
-   jobsRr = {}
+    jobsRr = {}
 
-   for ajob in ajobs:
+    for ajob in ajobs:
 
-      role = 'UNDEFINED'
-      if "x509UserProxyFirstFQAN" in ajob:
-         m = re.search('\/Role\=(.*)\/', ajob["x509UserProxyFirstFQAN"])
-         if m:
-            role = m.group(1)
-      if role not in roles:
-         roles.append(role)
+        role = 'UNDEFINED'
+        if "x509UserProxyFirstFQAN" in ajob:
+            m = re.search('\/Role\=(.*)\/', ajob["x509UserProxyFirstFQAN"])
+            if m:
+                role = m.group(1)
+        if role not in roles:
+            roles.append(role)
 
-      preemptable = 0
-      if "isPreemptable" in ajob:
-         if ajob["isPreemptable"]:
-            preemptable = 1
+        preemptable = 0
+        if "isPreemptable" in ajob:
+            if ajob["isPreemptable"]:
+                preemptable = 1
 
-      if "x509UserProxyVOName" not in ajob:
-         ajob["x509UserProxyVOName"] = "undefined"
+        if "x509UserProxyVOName" not in ajob:
+            ajob["x509UserProxyVOName"] = "undefined"
 
-      if ajob["x509UserProxyVOName"] not in vos:
-         vos.append(ajob["x509UserProxyVOName"])
+        if ajob["x509UserProxyVOName"] not in vos:
+            vos.append(ajob["x509UserProxyVOName"])
 
-      if ajob["x509UserProxyVOName"] not in vosa:
-         vosa.append(ajob["x509UserProxyVOName"])
+        if ajob["x509UserProxyVOName"] not in vosa:
+            vosa.append(ajob["x509UserProxyVOName"])
 
-      if ajob["RequestCpus"] not in cpus:
-         cpus.append(ajob["RequestCpus"])
-    
-      if ajob["JobStatus"] == 2:
-         if "ResidentSetSize_RAW" in ajob:
-            ResidentSetSize_RAW += ajob["ResidentSetSize_RAW"]
+        if ajob["RequestCpus"] not in cpus:
+            cpus.append(ajob["RequestCpus"])
 
-         if "DockerImage" in ajob:
-            if ajob["DockerImage"] != "undefined":
-               if ajob["DockerImage"] not in imagesR:
-                  imagesR[ajob["DockerImage"]] = 0
-               imagesR[ajob["DockerImage"]] += 1
-
-         if not jobsR.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
-            jobsR[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
-         jobsR[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsR[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
-
-         if not jobsRr.has_key((ajob["x509UserProxyVOName"], role)):
-            jobsRr[(ajob["x509UserProxyVOName"], role)] = 0
-         jobsRr[(ajob["x509UserProxyVOName"], role)] = jobsRr[(ajob["x509UserProxyVOName"], role)] + 1
-
-         if preemptable == 1:
-            if not jobsRp.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
-               jobsRp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
-            jobsRp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsRp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
-
-         if "RemoteHost" in ajob:
-            if "nubes" in ajob["RemoteHost"]:
-               if not jobsRc.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
-                  jobsRc[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
-               jobsRc[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsRc[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
-
-         if "JobCurrentStartDate" in ajob and "RemoteSysCpu" in ajob and "RemoteUserCpu" in ajob:
-            if not jobsW.has_key(ajob["x509UserProxyVOName"]):
-               jobsW[ajob["x509UserProxyVOName"]] = 0
-            jobsW[ajob["x509UserProxyVOName"]] += ajob["RequestCpus"]*(time.time() - ajob["JobCurrentStartDate"])
+        if ajob["JobStatus"] == 2:
+            if "ResidentSetSize_RAW" in ajob:
+                ResidentSetSize_RAW += ajob["ResidentSetSize_RAW"]
 
             if "DockerImage" in ajob:
-               if ajob["DockerImage"] != "undefined":
-                  if not jobsRd.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
-                     jobsRd[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
-                  jobsRd[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsRd[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
+                if ajob["DockerImage"] != "undefined":
+                    if ajob["DockerImage"] not in imagesR:
+                        imagesR[ajob["DockerImage"]] = 0
+                    imagesR[ajob["DockerImage"]] += 1
 
-            if not jobsC.has_key(ajob["x509UserProxyVOName"]):
-               jobsC[ajob["x509UserProxyVOName"]] = 0
-            jobsC[ajob["x509UserProxyVOName"]] += ajob["RemoteSysCpu"] + ajob["RemoteUserCpu"]
+            if not jobsR.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
+                jobsR[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
+            jobsR[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsR[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
 
-      if ajob["JobStatus"] == 1:
-         if not jobsI.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
-            jobsI[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
-         jobsI[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsI[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
+            if not jobsRr.has_key((ajob["x509UserProxyVOName"], role)):
+                jobsRr[(ajob["x509UserProxyVOName"], role)] = 0
+            jobsRr[(ajob["x509UserProxyVOName"], role)] = jobsRr[(ajob["x509UserProxyVOName"], role)] + 1
 
-         if preemptable == 1:
-            if not jobsIp.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
-               jobsIp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
-            jobsIp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsIp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
+            if preemptable == 1:
+                if not jobsRp.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
+                    jobsRp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
+                jobsRp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsRp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
 
-      if ajob["JobStatus"] == 5:
-         if not jobsH.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
-            jobsH[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
-         jobsH[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsH[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
+            if "RemoteHost" in ajob:
+                if "nubes" in ajob["RemoteHost"]:
+                    if not jobsRc.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
+                        jobsRc[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
+                    jobsRc[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsRc[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
 
-         if preemptable == 1:
-            if not jobsHp.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
-               jobsHp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
-            jobsHp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsHp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
+            if "JobCurrentStartDate" in ajob and "RemoteSysCpu" in ajob and "RemoteUserCpu" in ajob:
+                if not jobsW.has_key(ajob["x509UserProxyVOName"]):
+                    jobsW[ajob["x509UserProxyVOName"]] = 0
+                jobsW[ajob["x509UserProxyVOName"]] += ajob["RequestCpus"]*(time.time() - ajob["JobCurrentStartDate"])
 
-   hostS = host.split('.')[0]
-   for vo in vos:
-      for role in roles:
-         if jobsRr.has_key((vo, role)):
-            data += 'jobs_by_role,vo='+vo+',status=running,schedd='+hostS+',role='+role+' value='+str(jobsRr[(vo,role)])+'\n'
+                if "DockerImage" in ajob:
+                    if ajob["DockerImage"] != "undefined":
+                        if not jobsRd.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
+                            jobsRd[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
+                        jobsRd[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsRd[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
 
-      coresR = 0
-      coresRd = 0
-      coresRc = 0
-      coresI = 0
-      coresH = 0
-      for cpu in cpus:
-         if jobsR.has_key((vo, cpu)):
-            data += 'jobs,vo='+vo+',status=running,schedd='+hostS+',cpus='+str(cpu)+' value='+str(jobsR[(vo,cpu)])+'\n'
-            coresR += jobsR[(vo,cpu)] * cpu
+                if not jobsC.has_key(ajob["x509UserProxyVOName"]):
+                    jobsC[ajob["x509UserProxyVOName"]] = 0
+                jobsC[ajob["x509UserProxyVOName"]] += ajob["RemoteSysCpu"] + ajob["RemoteUserCpu"]
 
-         if jobsRd.has_key((vo, cpu)):
-            coresRd += jobsRd[(vo,cpu)] * cpu
+        if ajob["JobStatus"] == 1:
+            if not jobsI.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
+                jobsI[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
+            jobsI[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsI[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
 
-         if jobsI.has_key((vo, cpu)):
-            data += 'jobs,vo='+vo+',status=idle,schedd='+hostS+',cpus='+str(cpu)+' value='+str(jobsI[(vo,cpu)])+'\n'
-            coresI += jobsI[(vo,cpu)] * cpu
+            if preemptable == 1:
+                if not jobsIp.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
+                    jobsIp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
+                jobsIp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsIp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
 
-         if jobsH.has_key((vo, cpu)):
-            data += 'jobs,vo='+vo+',status=held,schedd='+hostS+',cpus='+str(cpu)+' value='+str(jobsH[(vo,cpu)])+'\n'
-            coresH += jobsH[(vo,cpu)] * cpu
+        if ajob["JobStatus"] == 5:
+            if not jobsH.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
+                jobsH[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
+            jobsH[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsH[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
 
-         if jobsRp.has_key((vo, cpu)):
-            data += 'pjobs,vo='+vo+',status=running,schedd='+hostS+',cpus='+str(cpu)+' value='+str(jobsRp[(vo,cpu)])+'\n'
+            if preemptable == 1:
+                if not jobsHp.has_key((ajob["x509UserProxyVOName"], ajob["RequestCpus"])):
+                    jobsHp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = 0
+                jobsHp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] = jobsHp[(ajob["x509UserProxyVOName"], ajob["RequestCpus"])] + 1
 
-         if jobsRc.has_key((vo, cpu)):
-            coresRc += jobsRc[(vo,cpu)] * cpu
+    hostS = host.split('.')[0]
+    for vo in vos:
+        for role in roles:
+            if jobsRr.has_key((vo, role)):
+                data += 'jobs_by_role,vo='+vo+',status=running,schedd='+hostS+',role='+role+' value='+str(jobsRr[(vo,role)])+'\n'
 
-         if jobsIp.has_key((vo, cpu)):
-            data += 'pjobs,vo='+vo+',status=idle,schedd='+hostS+',cpus='+str(cpu)+' value='+str(jobsIp[(vo,cpu)])+'\n'
+        coresR = 0
+        coresRd = 0
+        coresRc = 0
+        coresI = 0
+        coresH = 0
+        for cpu in cpus:
+            if jobsR.has_key((vo, cpu)):
+                data += 'jobs,vo='+vo+',status=running,schedd='+hostS+',cpus='+str(cpu)+' value='+str(jobsR[(vo,cpu)])+'\n'
+                coresR += jobsR[(vo,cpu)] * cpu
 
-         if jobsHp.has_key((vo, cpu)):
-            data += 'pjobs,vo='+vo+',status=held,schedd='+hostS+',cpus='+str(cpu)+' value='+str(jobsHp[(vo,cpu)])+'\n'
+            if jobsRd.has_key((vo, cpu)):
+                coresRd += jobsRd[(vo,cpu)] * cpu
 
-      data += 'cores,vo='+vo+',status=running,schedd='+hostS+' value='+str(coresR)+'\n'
-      data += 'cores_docker,vo='+vo+',status=running,schedd='+hostS+' value='+str(coresRd)+'\n'
-      data += 'cores_cloud,vo='+vo+',status=running,schedd='+hostS+' value='+str(coresRc)+'\n'
-      data += 'cores,vo='+vo+',status=idle,schedd='+hostS+' value='+str(coresI)+'\n'
-      data += 'cores,vo='+vo+',status=held,schedd='+hostS+' value='+str(coresH)+'\n'
+            if jobsI.has_key((vo, cpu)):
+                data += 'jobs,vo='+vo+',status=idle,schedd='+hostS+',cpus='+str(cpu)+' value='+str(jobsI[(vo,cpu)])+'\n'
+                coresI += jobsI[(vo,cpu)] * cpu
+
+            if jobsH.has_key((vo, cpu)):
+                data += 'jobs,vo='+vo+',status=held,schedd='+hostS+',cpus='+str(cpu)+' value='+str(jobsH[(vo,cpu)])+'\n'
+                coresH += jobsH[(vo,cpu)] * cpu
+
+            if jobsRp.has_key((vo, cpu)):
+                data += 'pjobs,vo='+vo+',status=running,schedd='+hostS+',cpus='+str(cpu)+' value='+str(jobsRp[(vo,cpu)])+'\n'
+
+            if jobsRc.has_key((vo, cpu)):
+                coresRc += jobsRc[(vo,cpu)] * cpu
+
+            if jobsIp.has_key((vo, cpu)):
+                data += 'pjobs,vo='+vo+',status=idle,schedd='+hostS+',cpus='+str(cpu)+' value='+str(jobsIp[(vo,cpu)])+'\n'
+
+            if jobsHp.has_key((vo, cpu)):
+                data += 'pjobs,vo='+vo+',status=held,schedd='+hostS+',cpus='+str(cpu)+' value='+str(jobsHp[(vo,cpu)])+'\n'
+
+        data += 'cores,vo='+vo+',status=running,schedd='+hostS+' value='+str(coresR)+'\n'
+        data += 'cores_docker,vo='+vo+',status=running,schedd='+hostS+' value='+str(coresRd)+'\n'
+        data += 'cores_cloud,vo='+vo+',status=running,schedd='+hostS+' value='+str(coresRc)+'\n'
+        data += 'cores,vo='+vo+',status=idle,schedd='+hostS+' value='+str(coresI)+'\n'
+        data += 'cores,vo='+vo+',status=held,schedd='+hostS+' value='+str(coresH)+'\n'
 
 wallTotal = 0
 cpuTotal = 0
 
 for vo in vosa:
-   if vo in jobsC:
-      wallTotal += jobsW[vo]
-      cpuTotal += jobsC[vo]
-      eff = -1.0
-      if jobsW[vo] > 0:
-         eff = jobsC[vo]/jobsW[vo]*100.0
-      data += 'cpu-efficiency,vo='+vo+' value='+str(eff)+'\n'
+    if vo in jobsC:
+        wallTotal += jobsW[vo]
+        cpuTotal += jobsC[vo]
+        eff = -1.0
+        if jobsW[vo] > 0:
+            eff = jobsC[vo]/jobsW[vo]*100.0
+        data += 'cpu-efficiency,vo='+vo+' value='+str(eff)+'\n'
 
 if wallTotal > 0:
-   eff = cpuTotal*100.0/wallTotal
-   data += 'cpu-efficiency-total value='+str(eff)+'\n'
+    eff = cpuTotal*100.0/wallTotal
+    data += 'cpu-efficiency-total value='+str(eff)+'\n'
 
 for key in imagesR:
-   data += 'image,status=running,image='+key+' value='+str(imagesR[key])+'\n'
+    data += 'image,status=running,image='+key+' value='+str(imagesR[key])+'\n'
 
 data += 'TotalResidentSetSize value='+str(ResidentSetSize_RAW)+'\n'
 
-print data
+print (data)

@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-import classad
+#!/usr/bin/env python3
 import htcondor
 
 coll = htcondor.Collector()
@@ -16,8 +14,8 @@ numNegotiators = len(results)
 data += 'NumNegotiators value=' + str(numNegotiators) + '\n'
 
 for result in results:
-   data += 'NegotiatorRecentDaemonCoreDutyCycle,host=' + result["Machine"] + ' value=' + str(result["RecentDaemonCoreDutyCycle"]) + '\n'
-   data += 'LastNegotiationCycleDuration,host=' + result["Machine"] + ' value=' + str(result["LastNegotiationCycleDuration0"]) + '\n'
+    data += 'NegotiatorRecentDaemonCoreDutyCycle,host=' + result["Machine"] + ' value=' + str(result["RecentDaemonCoreDutyCycle"]) + '\n'
+    data += 'LastNegotiationCycleDuration,host=' + result["Machine"] + ' value=' + str(result["LastNegotiationCycleDuration0"]) + '\n'
 
 # Schedds
 results = coll.query(htcondor.AdTypes.Schedd, "true", ["Name", "RecentDaemonCoreDutyCycle", "Autoclusters", "RecentJobsStarted", "RecentJobsExited", "RecentJobsSubmitted", "RecentJobsKilled", "RecentStatsLifetime"])
@@ -25,21 +23,21 @@ numSchedds = len(results)
 data += 'NumSchedds value=' + str(numSchedds) + '\n'
 
 for result in results:
-   data += 'ScheddRecentDaemonCoreDutyCycle,host=' + result["Name"] + ' value=' + str(result["RecentDaemonCoreDutyCycle"]) + '\n'
-   data += 'AutoClusters,host=' + result["Name"] + ' value=' + str(result["Autoclusters"]) + '\n'
+    data += 'ScheddRecentDaemonCoreDutyCycle,host=' + result["Name"] + ' value=' + str(result["RecentDaemonCoreDutyCycle"]) + '\n'
+    data += 'AutoClusters,host=' + result["Name"] + ' value=' + str(result["Autoclusters"]) + '\n'
 
-   lifetime = result["RecentStatsLifetime"]
-   recentJobsStarted = 0
-   recentJobsExited = 0
-   recentJobsSubmitted = 0
-   recentJobsKilled = 0
+    lifetime = result["RecentStatsLifetime"]
+    recentJobsStarted = 0
+    recentJobsExited = 0
+    recentJobsSubmitted = 0
+    recentJobsKilled = 0
 
-   if lifetime > 0:
-      recentJobsStarted = result["RecentJobsStarted"]*60.0/lifetime
-      recentJobsExited = result["RecentJobsExited"]*60.0/lifetime
-      recentJobsSubmitted = result["RecentJobsSubmitted"]*60.0/lifetime
-      recentJobsKilled = result["RecentJobsKilled"]*60.0/lifetime
-      data += 'RecentJobs,host=' + result["Name"] + ' Started=' + str(recentJobsStarted) + ',Exited=' + str(recentJobsExited) + ',Submitted=' + str(recentJobsSubmitted) + ',Killed=' + str(recentJobsKilled) + '\n'
+    if lifetime > 0:
+        recentJobsStarted = result["RecentJobsStarted"]*60.0/lifetime
+        recentJobsExited = result["RecentJobsExited"]*60.0/lifetime
+        recentJobsSubmitted = result["RecentJobsSubmitted"]*60.0/lifetime
+        recentJobsKilled = result["RecentJobsKilled"]*60.0/lifetime
+        data += 'RecentJobs,host=' + result["Name"] + ' Started=' + str(recentJobsStarted) + ',Exited=' + str(recentJobsExited) + ',Submitted=' + str(recentJobsSubmitted) + ',Killed=' + str(recentJobsKilled) + '\n'
 
 # Startds
 numStartds = 0
@@ -70,63 +68,63 @@ numCpusMesos = 0
 
 results = coll.query(htcondor.AdTypes.Startd, "PartitionableSlot=?=True", ["NODE_IS_HEALTHY", "StartJobs", "TotalCpus", "Cpus", "TotalMemory", "Memory","Machine","PREEMPTABLE_ONLY", "MESOS_TASK_ID", "CONTAINER_IMAGE_NAME", "RecentJobStarts", "TotalLoadAvg", "TotalDisk"])
 for result in results:
-   cpuUsed += result["TotalCpus"] - result["Cpus"]
-   cpuFree += result["Cpus"]
-   cpusUseable += result["TotalCpus"] - result["Cpus"]
-   memoryUsed += result["TotalMemory"] - result["Memory"]
-   memoryFree += result["Memory"]
-   TotalLoadAvg += result["TotalLoadAvg"]
-   numStartds += 1
-   if "NODE_IS_HEALTHY" in result and "StartJobs" in result:
-      if result["NODE_IS_HEALTHY"] == True and result["StartJobs"] == True:
-         numGoodStartds += 1
-         cpusUseable += result["Cpus"]
-         MemoryUseableTotal += result["TotalMemory"]
-         TotalUseableDisk += result["TotalDisk"]
+    cpuUsed += result["TotalCpus"] - result["Cpus"]
+    cpuFree += result["Cpus"]
+    cpusUseable += result["TotalCpus"] - result["Cpus"]
+    memoryUsed += result["TotalMemory"] - result["Memory"]
+    memoryFree += result["Memory"]
+    TotalLoadAvg += result["TotalLoadAvg"]
+    numStartds += 1
+    if "NODE_IS_HEALTHY" in result and "StartJobs" in result:
+        if result["NODE_IS_HEALTHY"] == True and result["StartJobs"] == True:
+            numGoodStartds += 1
+            cpusUseable += result["Cpus"]
+            MemoryUseableTotal += result["TotalMemory"]
+            TotalUseableDisk += result["TotalDisk"]
 
-   if "Machine" in result:
-      if "RecentJobStarts" in result and result["Machine"] != "":
-         data += 'RecentJobStarts,host=%s value=%d\n' % (result["Machine"], result["RecentJobStarts"])
+    if "Machine" in result:
+        if "RecentJobStarts" in result and result["Machine"] != "":
+            data += 'RecentJobStarts,host=%s value=%d\n' % (result["Machine"], result["RecentJobStarts"])
 
-      if "nubes" in result["Machine"]:
-         cpuUsedCloud += result["TotalCpus"] - result["Cpus"]
-         cpuFreeCloud += result["Cpus"]
-      if "MESOS_TASK_ID" in result:
-         cpuUsedMesos += result["TotalCpus"] - result["Cpus"]
-         cpuFreeMesos += result["Cpus"]
-      if "CONTAINER_IMAGE_NAME" in result:
-         if not cpuUsedMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
-            cpuUsedMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
-         if not cpuFreeMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
-            cpuFreeMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
-         if not memUsedMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
-            memUsedMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
-         if not memFreeMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
-            memFreeMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
-         if not numStartdsMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
-            numStartdsMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
-         if not numStartdsGoodMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
-            numStartdsGoodMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
-         if not numCpusUseableMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
-            numCpusUseableMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
-         
-         cpuFreeMesosI[result["CONTAINER_IMAGE_NAME"]] += result["Cpus"]
-         cpuUsedMesosI[result["CONTAINER_IMAGE_NAME"]] += result["TotalCpus"] - result["Cpus"]
-         memFreeMesosI[result["CONTAINER_IMAGE_NAME"]] += result["Memory"]
-         memUsedMesosI[result["CONTAINER_IMAGE_NAME"]] += result["TotalMemory"] - result["Memory"]
-         numStartdsMesosI[result["CONTAINER_IMAGE_NAME"]] += 1
+        if "nubes" in result["Machine"]:
+            cpuUsedCloud += result["TotalCpus"] - result["Cpus"]
+            cpuFreeCloud += result["Cpus"]
+        if "MESOS_TASK_ID" in result:
+            cpuUsedMesos += result["TotalCpus"] - result["Cpus"]
+            cpuFreeMesos += result["Cpus"]
+        if "CONTAINER_IMAGE_NAME" in result:
+            if not cpuUsedMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
+                cpuUsedMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
+            if not cpuFreeMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
+                cpuFreeMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
+            if not memUsedMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
+                memUsedMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
+            if not memFreeMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
+                memFreeMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
+            if not numStartdsMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
+                numStartdsMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
+            if not numStartdsGoodMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
+                numStartdsGoodMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
+            if not numCpusUseableMesosI.has_key(result["CONTAINER_IMAGE_NAME"]):
+                numCpusUseableMesosI[result["CONTAINER_IMAGE_NAME"]] = 0
 
-         numCpusMesos += result["TotalCpus"]
+            cpuFreeMesosI[result["CONTAINER_IMAGE_NAME"]] += result["Cpus"]
+            cpuUsedMesosI[result["CONTAINER_IMAGE_NAME"]] += result["TotalCpus"] - result["Cpus"]
+            memFreeMesosI[result["CONTAINER_IMAGE_NAME"]] += result["Memory"]
+            memUsedMesosI[result["CONTAINER_IMAGE_NAME"]] += result["TotalMemory"] - result["Memory"]
+            numStartdsMesosI[result["CONTAINER_IMAGE_NAME"]] += 1
 
-         if "NODE_IS_HEALTHY" in result and "StartJobs" in result:
-            if result["NODE_IS_HEALTHY"] == True and result["StartJobs"] == True:
-               numStartdsGoodMesosI[result["CONTAINER_IMAGE_NAME"]] += 1
-               numCpusUseableMesosI[result["CONTAINER_IMAGE_NAME"]] += result["Cpus"]
-               numCpusUseableMesos += result["Cpus"]
+            numCpusMesos += result["TotalCpus"]
 
-   if "PREEMPTABLE_ONLY" in result:
-      if result["PREEMPTABLE_ONLY"]:
-         numStartdsPreemptableOnly += 1
+            if "NODE_IS_HEALTHY" in result and "StartJobs" in result:
+                if result["NODE_IS_HEALTHY"] == True and result["StartJobs"] == True:
+                    numStartdsGoodMesosI[result["CONTAINER_IMAGE_NAME"]] += 1
+                    numCpusUseableMesosI[result["CONTAINER_IMAGE_NAME"]] += result["Cpus"]
+                    numCpusUseableMesos += result["Cpus"]
+
+    if "PREEMPTABLE_ONLY" in result:
+        if result["PREEMPTABLE_ONLY"]:
+            numStartdsPreemptableOnly += 1
 
 data += 'NumCpusUsed value=' + str(cpuUsed) + '\n'
 data += 'NumCpusFree value=' + str(cpuFree) + '\n'
@@ -145,33 +143,33 @@ data += 'TotalLoadAvg value=' + str(TotalLoadAvg) + '\n'
 data += 'TotalUseableDisk value=' + str(TotalUseableDisk) + '\n'
 
 if numCpusMesos > 0:
-   cpusUsedPercentMesos = 100.0*float(cpuUsedMesos)/numCpusMesos
-   cpusUseablePercentMesos = 100.0*float(numCpusUseableMesos)/numCpusMesos
+    cpusUsedPercentMesos = 100.0*float(cpuUsedMesos)/numCpusMesos
+    cpusUseablePercentMesos = 100.0*float(numCpusUseableMesos)/numCpusMesos
 else:
-   cpusUsedPercentMesos = 0
-   cpusUseablePercentMesos = 0
+    cpusUsedPercentMesos = 0
+    cpusUseablePercentMesos = 0
 
 if numCpusUseableMesos > 0:
-   cpusUseableUsedPercentMesos = 100.0*float(cpuUsedMesos)/numCpusUseableMesos
+    cpusUseableUsedPercentMesos = 100.0*float(cpuUsedMesos)/numCpusUseableMesos
 else:
-   cpusUseableUsedPercentMesos = 0
+    cpusUseableUsedPercentMesos = 0
 
 data += 'mesoscpus percentUsedOfUseable=' + str(cpusUseableUsedPercentMesos) + ',percentUseable=' + str(cpusUseablePercentMesos) + ',percentUsed=' + str(cpusUsedPercentMesos) + '\n'
 
 for image in cpuUsedMesosI:
-   data += 'mesosbatch,image='+image+' freeCpu='+str(cpuFreeMesosI[image])+',usedCpu='+str(cpuUsedMesosI[image])+',freeMemory='+str(memFreeMesosI[image])+',usedMemory='+str(memUsedMesosI[image])+',numStartds='+str(numStartdsMesosI[image])+',numGoodStartds='+str(numStartdsGoodMesosI[image])+'\n'
+    data += 'mesosbatch,image='+image+' freeCpu='+str(cpuFreeMesosI[image])+',usedCpu='+str(cpuUsedMesosI[image])+',freeMemory='+str(memFreeMesosI[image])+',usedMemory='+str(memUsedMesosI[image])+',numStartds='+str(numStartdsMesosI[image])+',numGoodStartds='+str(numStartdsGoodMesosI[image])+'\n'
 
 if cpuUsed + cpuFree > 0:
-   cpuUsedPercent = float(cpuUsed)*100/(cpuUsed + cpuFree)
-   cpuUseablePercent = float(cpusUseable)*100/(cpuUsed + cpuFree)
+    cpuUsedPercent = float(cpuUsed)*100/(cpuUsed + cpuFree)
+    cpuUseablePercent = float(cpusUseable)*100/(cpuUsed + cpuFree)
 else:
-   cpuUsedPercent = 0
-   cpuUseablePercent = 0
+    cpuUsedPercent = 0
+    cpuUseablePercent = 0
 
 if cpusUseable > 0:
-   cpuUsedPercentGood = float(cpuUsed)*100/cpusUseable
+    cpuUsedPercentGood = float(cpuUsed)*100/cpusUseable
 else:
-   cpuUsedPercentGood = 0
+    cpuUsedPercentGood = 0
 
 data += 'cpus numUsed=' + str(int(cpuUsed)) + ',' + \
         'numFree=' + str(cpuFree) + ',' + \
@@ -181,4 +179,4 @@ data += 'cpus numUsed=' + str(int(cpuUsed)) + ',' + \
         'percentUseable=' + str(cpuUseablePercent) + ',' + \
         'percentUsedOfUseable=' + str(cpuUsedPercentGood) + '\n'
 
-print data
+print (data)

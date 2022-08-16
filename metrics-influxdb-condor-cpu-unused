@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-import classad
+#!/usr/bin/env python3
 import htcondor
 
 # initialization
@@ -17,32 +15,31 @@ minimumMemory = 1000000
 coll = htcondor.Collector()
 results = coll.query(htcondor.AdTypes.Schedd, "true", ["Name"])
 for result in results:
-   host = result["Name"]
-   if 'arc-ce' in host:
-      scheddAd = coll.locate(htcondor.DaemonTypes.Schedd, host)
-      schedd = htcondor.Schedd(scheddAd)
-      jobs = schedd.query('JobStatus == 1', ["RequestMemory"])
-      for job in jobs:
-         if job["RequestMemory"] < minimumMemory and job["RequestMemory"] > 0:
-            minimumMemory = job["RequestMemory"]
+    host = result["Name"]
+    if 'arc-ce' in host:
+        scheddAd = coll.locate(htcondor.DaemonTypes.Schedd, host)
+        schedd = htcondor.Schedd(scheddAd)
+        jobs = schedd.query('JobStatus == 1', ["RequestMemory"])
+        for job in jobs:
+            if job["RequestMemory"] < minimumMemory and job["RequestMemory"] > 0:
+                minimumMemory = job["RequestMemory"]
 
 coll = htcondor.Collector()
 results = coll.query(htcondor.AdTypes.Startd, "PartitionableSlot =?= True", ["Name", "TotalSlotCpus", "Cpus", "TotalSlotMemory", "Memory", "State", "PREEMPTABLE_ONLY", "StartJobs", "NODE_IS_HEALTHY"])
 for result in results:
-   if result["Cpus"] > 0:
-      if str(result["State"]) == "Drained":
-         coresDraining += result["Cpus"]
-      elif 'PREEMPTABLE_ONLY' in result and result['PREEMPTABLE_ONLY'] == True:
-         coresPreemptable += result["Cpus"]
-      elif 'NODE_IS_HEALTHY' in result and result["NODE_IS_HEALTHY"] != True:
-         coresUnhealthy += result["Cpus"]
-      elif result["StartJobs"] == False:
-         coresStartJobs += result["Cpus"]
-      elif result["Memory"] < minimumMemory:
-         coresMemory += result["Cpus"]
-      else:
-         coresOther += result["Cpus"]
+    if result["Cpus"] > 0:
+        if str(result["State"]) == "Drained":
+            coresDraining += result["Cpus"]
+        elif 'PREEMPTABLE_ONLY' in result and result['PREEMPTABLE_ONLY'] == True:
+            coresPreemptable += result["Cpus"]
+        elif 'NODE_IS_HEALTHY' in result and result["NODE_IS_HEALTHY"] != True:
+            coresUnhealthy += result["Cpus"]
+        elif result["StartJobs"] == False:
+            coresStartJobs += result["Cpus"]
+        elif result["Memory"] < minimumMemory:
+            coresMemory += result["Cpus"]
+        else:
+            coresOther += result["Cpus"]
 
 data = 'CoresNotUsed draining=%d,preemptable=%d,unhealthy=%d,disabled=%d,memory=%d,other=%d' % (coresDraining, coresPreemptable, coresUnhealthy, coresStartJobs, coresMemory, coresOther)
-print data
-
+print (data)
