@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import htcondor
-import classad
 
 coll = htcondor.Collector()
 startds = coll.query(htcondor.AdTypes.Startd, "PartitionableSlot =?=True", ["Machine","TotalMemory","Memory","TotalCpus","Cpus","RalScaling","ScalingFactor","RalCluster","StartJobs"])

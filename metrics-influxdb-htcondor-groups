@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import sys
 import subprocess
 
 p = subprocess.Popen(["condor_config_val", "-negotiator", "GROUP_NAMES"], stdout=subprocess.PIPE)
