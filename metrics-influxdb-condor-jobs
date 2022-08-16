@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-import classad
-import htcondor
 import time
 import re
+import htcondor
 
 # Ignoreable schedds - any failures when quering these schedds will be ignored
-ignoreSchedFailures = ['arc-ce05.gridpp.rl.ac.uk', 'lcgvm21.gridpp.rl.ac.uk', 'arc-ce-test01.gridpp.rl.ac.uk']
+ignoreSchedFailures = ['arc-ce-test01.gridpp.rl.ac.uk', 'arc-ce-test02.gridpp.rl.ac.uk']
 
 vosa = []
 jobsW = {}
@@ -40,14 +39,22 @@ for result in results:
    roles = []
    cpus = []
 
+   # Initialize dictionary for running jobs
    jobsR = {}
+   # Initialize dictionary for running jobs in Docker environment
    jobsRd = {}
+   # Initialize dictionary for running jobs in Cloud environment
    jobsRc = {}
+   # Initialize dictionary for idle jobs
    jobsI = {}
+   # Initialize dictionary for on hold jobs
    jobsH = {}
 
+   # Initialize dictionary for running jobs and preemptable is true
    jobsRp = {}
+   # Initialize dictionary for idle jobs and preemptable is true
    jobsIp = {}
+   # Initialize dictionary for on hold jobs and preemptable is true
    jobsHp = {}
 
    jobsRr = {}
