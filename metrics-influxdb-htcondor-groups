@@ -17,33 +17,33 @@ quotas = {}
 usage = {}
 
 for line in lines:
-   if b'ByQuota' in line:
-      pieces = line.split()
-      group = pieces[0]
-      quota = pieces[1]
-      inuse = pieces[3]
-      quotas[group] = quota
-      usage[group] = inuse
-   if b'Number of users' in line:
-      pieces = line.split()
-      total = pieces[5]
+    if b'ByQuota' in line:
+        pieces = line.split()
+        group = pieces[0]
+        quota = pieces[1]
+        inuse = pieces[3]
+        quotas[group] = quota
+        usage[group] = inuse
+    if b'Number of users' in line:
+        pieces = line.split()
+        total = pieces[5]
 
 data = ''
 for group in groups:
-   if group in quotas and group in usage:
-      pieces = group.split(b'.')
-      percent = 1.0
-      name = ''
-      for piece in pieces:
-         if len(name) > 0:
-            name = name + b'.' + piece
-         else:
-            name = piece
-         percent = percent*float(quotas[name])
-         cpus = percent*float(total)
-         fairness = 0
-         if cpus > 0:
-            fairness = 100.0*float(usage[group])/cpus
-      data += "groups,name=%s allocation=%d,usage=%d,fairness=%d\n" % (group.decode(), cpus, int(float(usage[group])), fairness)
+    if group in quotas and group in usage:
+        pieces = group.split(b'.')
+        percent = 1.0
+        name = ''
+        for piece in pieces:
+            if len(name) > 0:
+                name = name + b'.' + piece
+            else:
+                name = piece
+            percent = percent*float(quotas[name])
+            cpus = percent*float(total)
+            fairness = 0
+            if cpus > 0:
+                fairness = 100.0*float(usage[group])/cpus
+        data += "groups,name=%s allocation=%d,usage=%d,fairness=%d\n" % (group.decode(), cpus, int(float(usage[group])), fairness)
 
 print (data)
